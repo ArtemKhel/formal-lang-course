@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "formal-lang-course"
+version = "0.1.0"
+description = ""
+authors = ["ArtemKhel <ArtemKhel@gmail.com>"]
+readme = "README.md"
+packages = [{include = "project"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+antlr4-python3-runtime = "^4.13.1"
+cfpq-data = "^4.0.2"
+pydot = "^1.4.2"
+scipy = "^1.11.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.9.0"
+pytest = "^7.4.2"
+pre-commit = "^3.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
