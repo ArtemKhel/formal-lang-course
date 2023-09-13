@@ -3,8 +3,6 @@ from typing import NamedTuple
 
 import cfpq_data
 import networkx as nx
-from cfpq_data import labeled_two_cycles_graph
-from networkx import MultiDiGraph
 
 
 class GraphStats(NamedTuple):
@@ -13,17 +11,17 @@ class GraphStats(NamedTuple):
     edge_labels: set[str]
 
 
-def load_graph(name: str) -> MultiDiGraph:
+def load_graph(name: str) -> nx.MultiDiGraph:
     graph_path = cfpq_data.download(name)
     graph = cfpq_data.graph_from_csv(graph_path)
     return graph
 
 
-def save_graph_as_dot(graph: MultiDiGraph, path: Path):
+def save_graph_as_dot(graph: nx.MultiDiGraph, path: Path):
     nx.drawing.nx_pydot.to_pydot(graph).write(path)
 
 
-def get_graph_stats(graph: MultiDiGraph) -> GraphStats:
+def get_graph_stats(graph: nx.MultiDiGraph) -> GraphStats:
     return GraphStats(
         nodes=graph.number_of_nodes(),
         edges=graph.number_of_edges(),
@@ -36,4 +34,4 @@ def get_graph_stats_by_name(name: str) -> GraphStats:
 
 
 def create_and_save_two_cycles_graph(fst_cycle_len: int, snd_cycle_len: int, labels: tuple[str, str], path: Path):
-    save_graph_as_dot(labeled_two_cycles_graph(fst_cycle_len, snd_cycle_len, labels=labels), path)
+    save_graph_as_dot(cfpq_data.labeled_two_cycles_graph(fst_cycle_len, snd_cycle_len, labels=labels), path)
