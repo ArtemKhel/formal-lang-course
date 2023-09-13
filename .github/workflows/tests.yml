@@ -9,7 +9,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "style"
-  style:
+  tests:
     # The type of runner that the job will run on
     runs-on: ${{ matrix.os }}
 
@@ -17,6 +17,11 @@ jobs:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
         python-version: [ 3.11 ]
+
+    # For windows
+    defaults:
+      run:
+        shell: bash
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -58,5 +63,4 @@ jobs:
       #----------------------------------------------
       - name: Run tests
         run: |
-          source .venv/bin/activate
-          pytest
+          poetry run pytest
