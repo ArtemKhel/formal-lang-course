@@ -1,5 +1,5 @@
 # This is a basic workflow to help you get started with Actions
-name: Check code style
+name: Run tests
 
 # Controls when the workflow will run
 on:
@@ -9,12 +9,11 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "style"
-  style:
+  tests:
     # The type of runner that the job will run on
     runs-on: ${{ matrix.os }}
 
     strategy:
-      # You can define a matrix of different job configurations
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
         python-version: [ 3.11 ]
@@ -24,6 +23,7 @@ jobs:
       run:
         shell: bash
 
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       #----------------------------------------------
       #       check-out repo and set-up python
@@ -59,14 +59,8 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
       #----------------------------------------------
-      #    add matrix specifics and run pre-commit
+      #    add matrix specifics and run test suite
       #----------------------------------------------
-      # Install pre-commit from .pre-commit-config.yaml
-      - name: Install pre-commit
+      - name: Run tests
         run: |
-          poetry run pre-commit install
-
-      # Run pre-commit on all the files in the repo
-      - name: Run pre-commit
-        run: |
-          poetry run pre-commit run --all-files --color always --verbose --show-diff-on-failure
+          poetry run pytest
