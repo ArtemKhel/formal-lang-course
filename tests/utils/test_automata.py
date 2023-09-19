@@ -1,10 +1,11 @@
 from symtable import Symbol
 
 import cfpq_data
-from networkx import MultiDiGraph
+from networkx import MultiDiGraph, algorithms, is_isomorphic
 
 from project.utils.automata import *
 from project.utils.automata import regex_to_dfa
+from project.utils.graphs import load_graph
 
 
 # noinspection PyTypeChecker
@@ -70,3 +71,18 @@ class TestGraphToNFA:
         graph.add_node(0, is_start=True, is_final=True)
         actual = graph_to_nfa(graph, start_states={0}, final_states={0})
         assert actual.is_equivalent_to(expected)
+
+    @staticmethod
+    def is_isomorphic_nfa_and_graph(nfa: NondeterministicFiniteAutomaton, graph: MultiDiGraph) -> bool:
+        nx_graph = nfa.to_networkx()
+
+        for node in filter(lambda node: isinstance(node, str) and node.endswith("_starting"), list(nx_graph)):
+            nx_graph.remove_node(node)
+
+        return is_isomorphic(graph, nx_graph)
+
+    def test_graph_from_cfpq(self):
+        for name in ('travel', 'skos', 'generations'):
+            graph = load_graph(name)
+            nfa = graph_to_nfa(graph)
+            assert self.is_isomorphic_nfa_and_graph(nfa, graph)
