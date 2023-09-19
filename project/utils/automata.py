@@ -5,8 +5,10 @@ from pyformlang.finite_automaton import DeterministicFiniteAutomaton, Nondetermi
 from pyformlang.regular_expression import Regex
 
 
-def regex_to_dfa(regex: str) -> DeterministicFiniteAutomaton:
-    return Regex(regex).to_epsilon_nfa().minimize()
+def regex_to_dfa(regex: str | Regex) -> DeterministicFiniteAutomaton:
+    if isinstance(regex, str):
+        regex = Regex(regex)
+    return regex.to_epsilon_nfa().minimize()
 
 
 def graph_to_nfa(
