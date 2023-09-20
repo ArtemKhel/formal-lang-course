@@ -1,4 +1,3 @@
-from project.utils.automata import regex_to_dfa
 from project.utils.graphs import *
 from project.utils.rpq import *
 
@@ -41,7 +40,8 @@ def main():
     save_graph_as_dot(nn.to_deterministic().minimize().to_networkx(), './_rr.dot')
 
     # inter = intersect_nfa(one, two)
-    inter = intersect_nfa(n, nn)
+    inter = intersect_nfa(n, nn).to_nfa()
+    res = rpq(one.to_networkx(), ss, {0}, {1})
 
     save_graph_as_dot(inter.to_networkx(), './_inter.dot')
     save_graph_as_dot(inter.minimize().to_networkx(), './_inter_min.dot')

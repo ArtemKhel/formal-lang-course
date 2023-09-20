@@ -1,7 +1,9 @@
 from typing import Dict, Any
 
-from pyformlang.finite_automaton import NondeterministicFiniteAutomaton, EpsilonNFA
+from pyformlang.finite_automaton import EpsilonNFA
 from scipy.sparse import dok_matrix, kron, lil_matrix
+
+from project.utils.automata import *
 
 
 # noinspection PyTypeChecker
@@ -13,6 +15,7 @@ class BooleanDecomposition:
     states_map: dict[int:int]  # TODO: needed only for init
 
     def __init__(self, nfa: NondeterministicFiniteAutomaton = None):
+        # nfa = nfa.remove_epsilon_transitions()
         self.matrices = dict()
         if nfa is not None:
             nfa = nfa.remove_epsilon_transitions()
@@ -58,13 +61,20 @@ class BooleanDecomposition:
 
         return enfa.remove_epsilon_transitions()
 
-    def transitive_closure(self):
-        pass
+    def transitive_closure(self) -> dok_matrix:
+        transitions = sum(self.matrices.values())
+        prev = 0
+        curr = transitions.nnz
+        while prev != curr:
+            prev = curr
+            transitions += transitions @ transitions
+            curr = transitions.nnz
+        return transitions
 
 
 def intersect_nfa(
     nfa_1: NondeterministicFiniteAutomaton, nfa_2: NondeterministicFiniteAutomaton
-) -> NondeterministicFiniteAutomaton:
+) -> BooleanDecomposition:
     intersection = BooleanDecomposition()
     bd_1 = BooleanDecomposition(nfa_1)
     bd_2 = BooleanDecomposition(nfa_2)
@@ -77,7 +87,20 @@ def intersect_nfa(
     intersection.start_states = kron(bd_1.start_states, bd_2.start_states)
     intersection.final_states = kron(bd_1.final_states, bd_2.final_states)
 
-    print(bd_1.matrices['a'].todense())
-    print(bd_2.matrices['a'].todense())
-    print(intersection.matrices['a'].todense())
-    return intersection.to_nfa()
+    return intersection  # .to_nfa()
+
+
+def rpq(
+    graph: nx.MultiDiGraph, regex: str | Regex, start_states: set[int], final_states: set[int]
+) -> set[tuple[int, int]]:
+    graph_fa = graph_to_nfa(graph, start_states, final_states)
+    regex_fa = regex_to_dfa(regex)
+    intersection = intersect_nfa(graph_fa, regex_fa)
+    tc = intersection.transitive_closure()
+
+    res = set()
+    for _, start in zip(*intersection.start_states.nonzero()):
+        for _, final in zip(*intersection.final_states.nonzero()):
+            if tc[start, final]:
+                res.add((start, final))
+    return res
