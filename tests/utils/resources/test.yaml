@@ -1,0 +1,56 @@
+data:
+  - graph: 'digraph  { 0; 1; 0 -> 1  [label=a]; }'
+    requests:
+      - regex: 'a'
+        expected: [ [ '0', '1' ] ]
+      - regex: 'a*'
+        expected: [ [ '0', '1' ] ]
+
+  - graph: 'digraph  { 0; 1; 2; 0 -> 1  [label=a]; 1 -> 1  [label=b]; 1 -> 2  [label=c]; }'
+    start_states: [ '0' ]
+    final_states: [ '2' ]
+    requests:
+      - regex: 'a c'
+        expected: [ [ '0', '2' ] ]
+      - regex: 'a b c'
+        expected: [ [ '0', '2' ] ]
+
+  - graph: 'digraph  { 0; 1; 2; 0 -> 1  [label=a]; 1 -> 1  [label=b]; 1 -> 2  [label=c]; }'
+    requests:
+      - regex: 'a c'
+        expected: [ [ '0', '2' ] ]
+      - regex: 'a b c'
+        expected: [ [ '0', '2' ] ]
+      - regex: 'a b*'
+        expected: [ [ '0', '1' ] ]
+      - regex: 'b*'
+        expected: [ [ '1', '1' ] ]
+      - regex: 'c'
+        expected: [ [ '1', '2' ] ]
+      - regex: 'b* c'
+        expected: [ [ '1', '2' ] ]
+
+  - graph: 'digraph  { 0; 1; 2; 3; 0 -> 1  [label=a];  1 -> 2  [label=c]; 0 -> 3  [label=c]; }'
+    requests:
+      - regex: 'a* c'
+        expected: [ [ '1', '2' ], [ '0', '3' ], [ '0', '2' ] ]
+
+  - graph: 'digraph {0; 1; 0 -> 1 [label=a]; 1 -> 2 [label=a]}'
+    start_states: [ '0' ]
+    final_states: [ '1', '2' ]
+    requests:
+      - regex: 'a'
+        expected: [ [ '0', '1' ] ]
+      - regex: 'a a'
+        expected: [ [ '0', '2' ] ]
+      - regex: 'a*'
+        expected: [ [ '0', '1' ], [ '0', '2' ] ]
+
+  - graph: 'digraph  { 0; 1;  0 -> 0  [key=0, label=a]; 0 -> 1  [key=0, label=b]; 1 -> 1  [key=0, label=c]; 1 -> 0  [key=0, label=d]; }'
+    requests:
+      - regex: 'b d'
+        expected: [ [ '0', '0' ] ]
+      - regex: 'b c*'
+        expected: [ [ '0', '1' ] ]
+      - regex: 'b c* (d|$) a*'
+        expected: [ [ '0', '0' ], [ '0', '1' ] ]
