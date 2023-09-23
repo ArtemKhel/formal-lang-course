@@ -1,6 +1,7 @@
 import cfpq_data
 import pytest
 from networkx import MultiDiGraph, is_isomorphic
+from pyformlang.finite_automaton import Symbol
 
 from project.utils.automata import *
 from project.utils.automata import regex_to_dfa
