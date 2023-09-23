@@ -1,11 +1,10 @@
-from symtable import Symbol
-
 import cfpq_data
-from networkx import MultiDiGraph, algorithms, is_isomorphic
+import pytest
+from networkx import MultiDiGraph, is_isomorphic
 
 from project.utils.automata import *
 from project.utils.automata import regex_to_dfa
-from project.utils.graphs import load_graph
+from project.utils.graphs import load_graph_by_name
 
 
 # noinspection PyTypeChecker
@@ -83,6 +82,6 @@ class TestGraphToNFA:
 
     def test_graph_from_cfpq(self):
         for name in ('travel', 'skos', 'generations'):
-            graph = load_graph(name)
+            graph = load_graph_by_name(name)
             nfa = graph_to_nfa(graph)
             assert self.is_isomorphic_nfa_and_graph(nfa, graph)

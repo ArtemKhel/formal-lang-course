@@ -1,3 +1,4 @@
+from itertools import product
 from typing import Dict, Any
 
 from scipy.sparse import dok_matrix, kron, lil_matrix
@@ -12,20 +13,30 @@ class BooleanDecomposition:
     final_states: lil_matrix
     n_states: int
 
-    def __init__(self, nfa: NondeterministicFiniteAutomaton):
+    def __init__(self, nfa: NondeterministicFiniteAutomaton | None = None):
         self.matrices = dict()
+        self.states_map = dict()
+
+        if nfa is None:
+            self.start_states = lil_matrix((1, 0), dtype=bool)
+            self.final_states = dok_matrix((1, 0), dtype=bool)
+            self.n_states = 0
+            return
+
         nfa = nfa.remove_epsilon_transitions()
 
         self.n_states = len(nfa.states)
-        states_map = {s: i for i, s in enumerate(nfa.states)}
+        # TODO: seems kinda redundant
+        self.states_map = {s: i for i, s in enumerate(nfa.states)}
+        self.states_backmap = {i: s for s, i in self.states_map.items()}
 
         self.start_states = lil_matrix((1, self.n_states), dtype=bool)
         for s in nfa.start_states:
-            self.start_states[0, states_map[s]] = True
+            self.start_states[0, self.states_map[s]] = True
 
         self.final_states = lil_matrix((1, self.n_states), dtype=bool)
         for s in nfa.final_states:
-            self.final_states[0, states_map[s]] = True
+            self.final_states[0, self.states_map[s]] = True
 
         for cur_state, transitions in nfa.to_dict().items():
             for symbol, next_states_set in transitions.items():
@@ -34,7 +45,7 @@ class BooleanDecomposition:
                 if not isinstance(next_states_set, set):
                     next_states_set = {next_states_set}
                 for next_state in next_states_set:
-                    self.matrices[symbol][states_map[cur_state], states_map[next_state]] = True
+                    self.matrices[symbol][self.states_map[cur_state], self.states_map[next_state]] = True
 
     def to_nfa(self) -> NondeterministicFiniteAutomaton:
         nfa = NondeterministicFiniteAutomaton()
@@ -50,6 +61,8 @@ class BooleanDecomposition:
         return nfa.remove_epsilon_transitions()
 
     def transitive_closure(self) -> dok_matrix:
+        if len(self.matrices) == 0:
+            return dok_matrix((self.n_states, self.n_states))
         transitions = sum(self.matrices.values())
         prev = 0
         curr = transitions.nnz
@@ -74,21 +87,30 @@ def intersect_nfa(
 
     intersection.start_states = kron(bd_1.start_states, bd_2.start_states)
     intersection.final_states = kron(bd_1.final_states, bd_2.final_states)
+    intersection.states_map = {
+        (s1, s2): (i1 * len(bd_2.states_map) + i2)
+        for i, ((s1, i1), (s2, i2)) in enumerate(product(bd_1.states_map.items(), bd_2.states_map.items()))
+    }
+    intersection.states_backmap = {i: s for s, i in intersection.states_map.items()}
 
     return intersection
 
 
 def rpq(
-    graph: nx.MultiDiGraph, regex: str | Regex, start_states: set[int], final_states: set[int]
+    graph: nx.MultiDiGraph,
+    regex: str | Regex,
+    start_states: set[int] | None = None,
+    final_states: set[int] | None = None,
 ) -> set[tuple[int, int]]:
     graph_fa = graph_to_nfa(graph, start_states, final_states)
     regex_fa = regex_to_dfa(regex)
     intersection = intersect_nfa(graph_fa, regex_fa)
     tc = intersection.transitive_closure()
 
+    rbd = BooleanDecomposition(regex_fa)
     res = set()
     for start in intersection.start_states.nonzero()[1]:
         for final in intersection.final_states.nonzero()[1]:
             if tc[start, final]:
-                res.add((start, final))
+                res.add((intersection.states_backmap[start][0], intersection.states_backmap[final][0]))
     return res

@@ -3,6 +3,7 @@ from typing import NamedTuple
 
 import cfpq_data
 import networkx as nx
+import pydot
 
 
 class GraphStats(NamedTuple):
@@ -11,10 +12,18 @@ class GraphStats(NamedTuple):
     edge_labels: set[str]
 
 
-def load_graph(name: str) -> nx.MultiDiGraph:
+def load_graph_by_name(name: str) -> nx.MultiDiGraph:
     graph_path = cfpq_data.download(name)
     graph = cfpq_data.graph_from_csv(graph_path)
     return graph
+
+
+def load_graph_from_dot(path: Path) -> nx.MultiDiGraph:
+    return nx.drawing.nx_pydot.from_pydot(pydot.graph_from_dot_file(path)[0])
+
+
+def load_graph_from_str(strn: str) -> nx.MultiDiGraph:
+    return nx.drawing.nx_pydot.from_pydot(pydot.graph_from_dot_data(strn)[0])
 
 
 def save_graph_as_dot(graph: nx.MultiDiGraph, path: Path):
@@ -30,7 +39,7 @@ def get_graph_stats(graph: nx.MultiDiGraph) -> GraphStats:
 
 
 def get_graph_stats_by_name(name: str) -> GraphStats:
-    return get_graph_stats(load_graph(name))
+    return get_graph_stats(load_graph_by_name(name))
 
 
 def create_and_save_two_cycles_graph(fst_cycle_len: int, snd_cycle_len: int, labels: tuple[str, str], path: Path):
