@@ -26,7 +26,6 @@ class BooleanDecomposition:
         nfa = nfa.remove_epsilon_transitions()
 
         self.n_states = len(nfa.states)
-        # TODO: seems kinda redundant
         self.states_map = {s: i for i, s in enumerate(nfa.states)}
         self.states_backmap = {i: s for s, i in self.states_map.items()}
 
@@ -107,7 +106,6 @@ def rpq(
     intersection = intersect_nfa(graph_fa, regex_fa)
     tc = intersection.transitive_closure()
 
-    rbd = BooleanDecomposition(regex_fa)
     res = set()
     for start in intersection.start_states.nonzero()[1]:
         for final in intersection.final_states.nonzero()[1]:
