@@ -43,7 +43,7 @@ class TestRPQ:
     @pytest.mark.parametrize(
         ['graph', 'start_states', 'final_states', 'regex', 'expected'],
         load_test_data(
-            TEST_DIR / 'utils/resources/test.yaml',
+            TEST_DIR / 'utils/resources/rpq.yaml',
             lambda data: (
                 (
                     load_graph_from_str(data['graph']),
@@ -63,3 +63,33 @@ class TestRPQ:
         self, graph: nx.MultiDiGraph, start_states: set[int], final_states: set[int], regex: str, expected: set
     ):
         assert rpq(graph, regex, start_states, final_states) == expected
+
+
+class TestRPQWithConstraint:
+    @pytest.mark.parametrize(
+        ['graph', 'regex', 'start_states', 'final_states', 'per_state', 'expected'],
+        load_test_data(
+            TEST_DIR / 'utils/resources/rpq_with_constraint.yaml',
+            lambda data: (
+                (load_graph_from_str(data['graph']), regex, start, final, per_state, expected)
+                for regex, start, final, per_state, expected in (
+                    (
+                        req['regex'],
+                        set(x for x in req['start']),
+                        set(x for x in req['final']) if 'final' in req else None,
+                        req['per_state'],
+                        set(tuple(x) if req['per_state'] else x for x in req['expected']),
+                    )
+                    for req in data['requests']
+                )
+            ),
+            flat=True,
+        ),
+    )
+    def test_main(self, graph, regex, start_states, final_states, per_state, expected):
+        assert (
+            rpq_with_constraint(
+                graph=graph, regex=regex, start_states=start_states, final_states=final_states, per_state=per_state
+            )
+            == expected
+        )
