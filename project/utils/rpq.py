@@ -1,106 +1,15 @@
-from itertools import product
-from typing import Dict, Any
-
-from scipy.sparse import dok_matrix, kron, lil_matrix
+from scipy.sparse import dok_matrix, identity, hstack, vstack
 
 from project.utils.automata import *
-
-
-# noinspection PyTypeChecker
-class BooleanDecomposition:
-    matrices: Dict[Any, dok_matrix]
-    start_states: lil_matrix
-    final_states: lil_matrix
-    n_states: int
-
-    def __init__(self, nfa: NondeterministicFiniteAutomaton | None = None):
-        self.matrices = dict()
-        self.states_map = dict()
-
-        if nfa is None:
-            self.start_states = lil_matrix((1, 0), dtype=bool)
-            self.final_states = dok_matrix((1, 0), dtype=bool)
-            self.n_states = 0
-            return
-
-        nfa = nfa.remove_epsilon_transitions()
-
-        self.n_states = len(nfa.states)
-        self.states_map = {s: i for i, s in enumerate(nfa.states)}
-        self.states_backmap = {i: s for s, i in self.states_map.items()}
-
-        self.start_states = lil_matrix((1, self.n_states), dtype=bool)
-        for s in nfa.start_states:
-            self.start_states[0, self.states_map[s]] = True
-
-        self.final_states = lil_matrix((1, self.n_states), dtype=bool)
-        for s in nfa.final_states:
-            self.final_states[0, self.states_map[s]] = True
-
-        for cur_state, transitions in nfa.to_dict().items():
-            for symbol, next_states_set in transitions.items():
-                if symbol not in self.matrices.keys():
-                    self.matrices[symbol] = dok_matrix((self.n_states, self.n_states), dtype=bool)
-                if not isinstance(next_states_set, set):
-                    next_states_set = {next_states_set}
-                for next_state in next_states_set:
-                    self.matrices[symbol][self.states_map[cur_state], self.states_map[next_state]] = True
-
-    def to_nfa(self) -> NondeterministicFiniteAutomaton:
-        nfa = NondeterministicFiniteAutomaton()
-        for label, matrix in self.matrices.items():
-            for (v, w), _ in matrix.items():
-                nfa.add_transition(v, label, w)
-
-        for i in self.start_states.nonzero()[1]:
-            nfa.add_start_state(i)
-        for i in self.final_states.nonzero()[1]:
-            nfa.add_final_state(i)
-
-        return nfa.remove_epsilon_transitions()
-
-    def transitive_closure(self) -> dok_matrix:
-        if len(self.matrices) == 0:
-            return dok_matrix((self.n_states, self.n_states))
-        transitions = sum(self.matrices.values())
-        prev = 0
-        curr = transitions.nnz
-        while prev != curr:
-            prev = curr
-            transitions += transitions @ transitions
-            curr = transitions.nnz
-        return transitions
-
-
-def intersect_nfa(
-    nfa_1: NondeterministicFiniteAutomaton, nfa_2: NondeterministicFiniteAutomaton
-) -> BooleanDecomposition:
-    intersection = BooleanDecomposition()
-    bd_1 = BooleanDecomposition(nfa_1)
-    bd_2 = BooleanDecomposition(nfa_2)
-    intersection.n_states = bd_1.n_states * bd_2.n_states
-    common_labels = bd_1.matrices.keys() & bd_2.matrices.keys()
-
-    for label in common_labels:
-        intersection.matrices[label] = kron(bd_1.matrices[label], bd_2.matrices[label], format="dok")
-
-    intersection.start_states = kron(bd_1.start_states, bd_2.start_states)
-    intersection.final_states = kron(bd_1.final_states, bd_2.final_states)
-    intersection.states_map = {
-        (s1, s2): (i1 * len(bd_2.states_map) + i2)
-        for i, ((s1, i1), (s2, i2)) in enumerate(product(bd_1.states_map.items(), bd_2.states_map.items()))
-    }
-    intersection.states_backmap = {i: s for s, i in intersection.states_map.items()}
-
-    return intersection
+from project.utils.boolean_decomposition import BooleanDecomposition, intersect_nfa
 
 
 def rpq(
     graph: nx.MultiDiGraph,
     regex: str | Regex,
-    start_states: set[int] | None = None,
-    final_states: set[int] | None = None,
-) -> set[tuple[int, int]]:
+    start_states: set[any] | None = None,
+    final_states: set[any] | None = None,
+) -> set[tuple[any, any]]:
     graph_fa = graph_to_nfa(graph, start_states, final_states)
     regex_fa = regex_to_dfa(regex)
     intersection = intersect_nfa(graph_fa, regex_fa)
@@ -111,4 +20,64 @@ def rpq(
         for final in intersection.final_states.nonzero()[1]:
             if tc[start, final]:
                 res.add((intersection.states_backmap[start][0], intersection.states_backmap[final][0]))
+    return res
+
+
+def rpq_with_constraint(
+    graph: nx.MultiDiGraph,
+    regex: str | Regex,
+    start_states: set[any] | None = None,
+    final_states: set[any] | None = None,
+    per_state: bool = False,
+) -> set[int] | set[tuple[int, int]]:
+    graph = BooleanDecomposition(graph_to_nfa(graph, start_states, final_states))
+    regex = BooleanDecomposition(regex_to_dfa(regex))
+    direct_sum = BooleanDecomposition.direct_sum(regex, graph)
+
+    gsn = graph.start_states.shape[1]
+    rn = regex.n_states
+
+    if per_state:
+        regex_front = vstack([identity(rn, dtype='bool') for i in range(gsn)])
+        graph_front = dok_matrix((rn * gsn, graph.n_states), dtype='bool')
+        for i, graph_start_state in enumerate(graph.start_states.nonzero()[1]):
+            for start_state in regex.start_states.nonzero()[1]:
+                graph_front[i * rn + start_state, graph_start_state] = True
+
+    else:
+        regex_front = identity(rn, dtype='bool')
+        graph_front = dok_matrix((rn, graph.n_states), dtype='bool')
+        for start_state in regex.start_states.nonzero()[1]:
+            graph_front[start_state] = graph.start_states
+    front = hstack([regex_front, graph_front], format='dok')
+
+    common_labels = graph.matrices.keys() & regex.matrices.keys()
+    visited = dok_matrix(front.shape, dtype='bool')
+    prev_nnz = None
+    curr_nnz = visited.nnz
+    while prev_nnz != curr_nnz:
+        new_front = dok_matrix(front.shape, dtype='bool')
+        for label in common_labels:
+            new_subfront = front @ direct_sum.matrices[label]
+            for i in range(gsn):
+                new_regex_subfront = new_subfront[i * rn : (i + 1) * rn + 1, :rn]
+                new_graph_subfront = new_subfront[i * rn : (i + 1) * rn + 1, rn:]
+
+                for x, y in zip(*new_regex_subfront.nonzero()):
+                    new_front[i * rn + y] += hstack([new_regex_subfront[x], new_graph_subfront[x]])
+
+        front = new_front
+        visited += front
+        prev_nnz = curr_nnz
+        curr_nnz = visited.nnz
+
+    res = set()
+    for i, start_state in enumerate(graph.start_states.nonzero()[1]):
+        for regex_state, final_state in zip(*visited[i * rn : (i + 1) * rn, rn:].nonzero()):
+            if regex.final_states[0, regex_state] and graph.final_states[0, final_state] and final_state != start_state:
+                if per_state:
+                    res.add((graph.states_backmap[start_state], graph.states_backmap[final_state]))
+                else:
+                    res.add(graph.states_backmap[final_state])
+
     return res
