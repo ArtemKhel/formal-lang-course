@@ -12,7 +12,7 @@ def flatmap(func, *iterable):
 
 
 def load_test_data(path: Path, convert: Callable = (lambda x: x), flat: bool = False) -> list[any]:
-    with open(path) as file:
+    with open(path, encoding='utf-8') as file:
         result = yaml.safe_load(file)
         map_ = flatmap if flat else map
         return list(map_(convert, result['data']))
