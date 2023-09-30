@@ -30,7 +30,6 @@ def rpq_with_constraint(
     final_states: set[any] | None = None,
     per_state: bool = False,
 ) -> set[int] | set[tuple[int, int]]:
-    re = regex
     graph = BooleanDecomposition(graph_to_nfa(graph, start_states, final_states))
     regex = BooleanDecomposition(regex_to_dfa(regex))
     direct_sum = BooleanDecomposition.direct_sum(regex, graph)
@@ -81,6 +80,4 @@ def rpq_with_constraint(
                 else:
                     res.add(graph.states_backmap[final_state])
 
-    print(re, start_states, final_states, per_state)
-    print(visited.todense())
     return res
