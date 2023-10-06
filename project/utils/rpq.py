@@ -30,11 +30,15 @@ def rpq_with_constraint(
     final_states: set[any] | None = None,
     per_state: bool = False,
 ) -> set[int] | set[tuple[int, int]]:
-    graph = BooleanDecomposition(graph_to_nfa(graph, start_states, final_states))
     regex = BooleanDecomposition(regex_to_dfa(regex))
+    graph = BooleanDecomposition(graph_to_nfa(graph, start_states, final_states))
+    if (regex.start_states @ regex.final_states.transpose())[0, 0]:
+        for l, m in graph.matrices.items():
+            graph.matrices[l] = m + identity(graph.n_states, dtype='bool')
+
     direct_sum = BooleanDecomposition.direct_sum(regex, graph)
 
-    gsn = graph.start_states.shape[1]
+    gsn = len(start_states)
     rn = regex.n_states
 
     if per_state:
@@ -60,8 +64,8 @@ def rpq_with_constraint(
         for label in common_labels:
             new_subfront = front @ direct_sum.matrices[label]
             for i in range(gsn):
-                new_regex_subfront = new_subfront[i * rn : (i + 1) * rn + 1, :rn]
-                new_graph_subfront = new_subfront[i * rn : (i + 1) * rn + 1, rn:]
+                new_regex_subfront = new_subfront[i * rn : (i + 1) * rn, :rn]
+                new_graph_subfront = new_subfront[i * rn : (i + 1) * rn, rn:]
 
                 for x, y in zip(*new_regex_subfront.nonzero()):
                     new_front[i * rn + y] += hstack([new_regex_subfront[x], new_graph_subfront[x]])
@@ -74,7 +78,7 @@ def rpq_with_constraint(
     res = set()
     for i, start_state in enumerate(graph.start_states.nonzero()[1]):
         for regex_state, final_state in zip(*visited[i * rn : (i + 1) * rn, rn:].nonzero()):
-            if regex.final_states[0, regex_state] and graph.final_states[0, final_state] and final_state != start_state:
+            if regex.final_states[0, regex_state] and graph.final_states[0, final_state]:
                 if per_state:
                     res.add((graph.states_backmap[start_state], graph.states_backmap[final_state]))
                 else:

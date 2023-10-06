@@ -15,7 +15,7 @@ data:
       - regex: 'a a'
         start: [ '0' ]
         per_state: true
-        expected: [ ]
+        expected: [ [ '0', '0' ] ]
       - regex: 'a a a'
         start: [ '0' ]
         per_state: false
@@ -26,11 +26,16 @@ data:
       - regex: 'a*'
         start: [ '0', '1' ]
         per_state: true
-        expected: [ [ '0', '1' ], [ '0', '2' ], [ '1', '2' ] ]
+        expected: [ [ '0', '0' ], [ '0', '1' ], [ '0', '2' ], [ '1', '1' ], [ '1', '2' ] ]
+      - regex: 'a*'
+        start: [ '0', '1' ]
+        final: [ '2' ]
+        per_state: true
+        expected: [ [ '0', '2' ], [ '1', '2' ] ]
       - regex: 'a*'
         start: [ '0' ]
         per_state: true
-        expected: [ [ '0', '1' ], [ '0', '2' ] ]
+        expected: [ [ '0', '0' ], [ '0', '1' ], [ '0', '2' ] ]
 
   - graph: 'digraph {0;1;2;3; 0 -> 1 [label=a]; 1 -> 2 [label=a]; 2 -> 3 [label=a];}'
     requests:
@@ -40,14 +45,19 @@ data:
         per_state: true
         expected: [ [ '0', '3' ] ]
 
-# Чёт фигня какая-то с этим тестом. Локально каждый раз проходит, а GHA рандомно фейлят.
-#  - graph: 'digraph {0;1;2;3; 0 -> 1 [label=a]; 1 -> 2 [label=b]; 2 -> 0 [label=a]; 0 -> 3 [label=b]; 3 -> 0 [label=b]}'
-#    requests:
-#      - regex: 'b* a b'
-#        start: [ '0', '2' ]
-#        per_state: true
-#        expected: [ [ '2', '3' ], [ '0', '2' ] ]
-#      - regex: 'b* a b'
-#        start: [ '0', '2' ]
-#        per_state: false
-#        expected: [ '3' ]
+  # Чёт фигня какая-то с этим тестом. Локально каждый раз проходит, а GHA рандомно фейлят.
+  - graph: 'digraph {0;1;2;3; 0 -> 1 [label=a]; 1 -> 2 [label=b]; 2 -> 0 [label=a]; 0 -> 3 [label=b]; 3 -> 0 [label=b]}'
+    requests:
+      - regex: 'b* a b'
+        start: [ '0', '2' ]
+        per_state: true
+        expected: [ [ '2', '3' ], [ '0', '2' ] ]
+      - regex: 'b* a b'
+        start: [ '0', '2' ]
+        per_state: false
+        expected: [ '2', '3' ]
+      - regex: 'b* a b'
+        start: [ '0', '2' ]
+        final: [ '3' ]
+        per_state: false
+        expected: [ '3' ]
