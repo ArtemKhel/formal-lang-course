@@ -1,7 +1,7 @@
-from scipy.sparse import dok_matrix, identity, hstack, vstack
+from scipy.sparse import identity, hstack, vstack, lil_matrix
 
 from project.utils.automata import *
-from project.utils.boolean_decomposition import BooleanDecomposition, intersect_nfa
+from project.utils.boolean_decomposition import BooleanDecomposition, intersect_nfa, SparseMatrixType
 
 
 def rpq(
@@ -9,29 +9,31 @@ def rpq(
     regex: str | Regex,
     start_states: set[any] | None = None,
     final_states: set[any] | None = None,
+    matrix_type: SparseMatrixType = lil_matrix,
 ) -> set[tuple[any, any]]:
     graph_fa = graph_to_nfa(graph, start_states, final_states)
     regex_fa = regex_to_dfa(regex)
-    intersection = intersect_nfa(graph_fa, regex_fa)
+    intersection = intersect_nfa(graph_fa, regex_fa, matrix_type)
     tc = intersection.transitive_closure()
 
     res = set()
-    for start in intersection.start_states.nonzero()[1]:
-        for final in intersection.final_states.nonzero()[1]:
-            if tc[start, final]:
-                res.add((intersection.states_backmap[start][0], intersection.states_backmap[final][0]))
+    for start, final in zip(
+        *((intersection.start_states.transpose() @ intersection.final_states).multiply(tc)).nonzero()
+    ):
+        res.add((intersection.states_backmap[start][0], intersection.states_backmap[final][0]))
     return res
 
 
-def rpq_with_constraint(
+def rpq_bfs(
     graph: nx.MultiDiGraph,
     regex: str | Regex,
     start_states: set[any] | None = None,
     final_states: set[any] | None = None,
     per_state: bool = False,
+    matrix_type: SparseMatrixType = lil_matrix,
 ) -> set[int] | set[tuple[int, int]]:
-    regex = BooleanDecomposition(regex_to_dfa(regex))
-    graph = BooleanDecomposition(graph_to_nfa(graph, start_states, final_states))
+    regex = BooleanDecomposition(regex_to_dfa(regex), matrix_type)
+    graph = BooleanDecomposition(graph_to_nfa(graph, start_states, final_states), matrix_type)
     if (regex.start_states @ regex.final_states.transpose())[0, 0]:
         for l, m in graph.matrices.items():
             graph.matrices[l] = m + identity(graph.n_states, dtype='bool')
@@ -43,24 +45,24 @@ def rpq_with_constraint(
 
     if per_state:
         regex_front = vstack([identity(rn, dtype='bool') for i in range(gsn)])
-        graph_front = dok_matrix((rn * gsn, graph.n_states), dtype='bool')
+        graph_front = matrix_type((rn * gsn, graph.n_states), dtype='bool')
         for i, graph_start_state in enumerate(graph.start_states.nonzero()[1]):
             for start_state in regex.start_states.nonzero()[1]:
                 graph_front[i * rn + start_state, graph_start_state] = True
 
     else:
         regex_front = identity(rn, dtype='bool')
-        graph_front = dok_matrix((rn, graph.n_states), dtype='bool')
+        graph_front = matrix_type((rn, graph.n_states), dtype='bool')
         for start_state in regex.start_states.nonzero()[1]:
             graph_front[start_state] = graph.start_states
     front = hstack([regex_front, graph_front], format='dok')
 
     common_labels = graph.matrices.keys() & regex.matrices.keys()
-    visited = dok_matrix(front.shape, dtype='bool')
+    visited = matrix_type(front.shape, dtype='bool')
     prev_nnz = None
     curr_nnz = visited.nnz
     while prev_nnz != curr_nnz:
-        new_front = dok_matrix(front.shape, dtype='bool')
+        new_front = matrix_type(front.shape, dtype='bool')
         for label in common_labels:
             new_subfront = front @ direct_sum.matrices[label]
             for i in range(gsn):
