@@ -1,6 +1,9 @@
 from pathlib import Path
 
-from pyformlang.cfg import CFG, Variable, Terminal, Production
+from pyformlang.cfg import CFG, Variable, Terminal
+from pyformlang.regular_expression import Regex
+
+from project.utils.ecfg import ECFG
 
 
 def cfg_from_file(p: Path | str) -> CFG:
@@ -32,5 +35,17 @@ def is_weak_normal_form(cfg: CFG) -> bool:
     )
 
 
-# if __name__ == '__main__':
-#     cfg = cfg_from_file('./_cfg')
+def cfg_to_ecfg(cfg: CFG) -> ECFG:
+    productions = {}
+    for production in cfg.productions:
+        body = Regex(" ".join(x.value for x in production.body) if production.body else "$")
+        if production.head not in productions:
+            productions[production.head] = body
+        else:
+            productions[production.head] = productions[production.head].union(body)
+    return ECFG(
+        variables=set(cfg.variables),
+        productions=productions,
+        terminals=set(cfg.terminals),
+        start_symbol=cfg.start_symbol,
+    )
