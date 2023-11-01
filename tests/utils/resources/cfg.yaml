@@ -1,0 +1,93 @@
+data:
+  - cfg: |
+      A -> a
+    start: A
+    expected: |
+      A -> Terminal(a)
+
+  - cfg: |
+      S -> a
+    start: A
+    expected: |
+
+  - cfg: |
+      S -> a S b S
+      S -> eps
+    expected: |
+      C#CNF#1 -> S C#CNF#2
+      S -> a#CNF# C#CNF#1
+      S -> Terminal(eps)
+      a#CNF# -> Terminal(a)
+      C#CNF#2 -> b#CNF# S
+      b#CNF# -> Terminal(b)
+
+  - cfg: |
+      S -> eps
+    expected: |
+      S -> Terminal(eps)
+
+  - cfg: |
+      S -> a
+    expected: |
+      S -> Terminal(a)
+
+  - cfg: |
+      S -> S S | a | b
+    expected: |
+      S -> Terminal(a)
+      S -> Terminal(b)
+      S -> S S
+
+  - cfg: |
+      S -> S S | eps
+    expected: |
+      S -> Terminal(eps)
+      S -> S S
+
+
+  - cfg: |
+      S -> A
+      A -> B
+      B -> c
+    expected: |
+      S -> Terminal(c)
+
+  - cfg: |
+      S -> a s d f
+    expected: |
+      f#CNF# -> Terminal(f)
+      S -> a#CNF# C#CNF#1
+      C#CNF#1 -> s#CNF# C#CNF#2
+      C#CNF#2 -> d#CNF# f#CNF#
+      s#CNF# -> Terminal(s)
+      a#CNF# -> Terminal(a)
+      d#CNF# -> Terminal(d)
+
+  - cfg: |
+      S -> a S b S c | eps
+    expected: |
+      C#CNF#1 -> S C#CNF#2
+      a#CNF# -> Terminal(a)
+      S -> Terminal(eps)
+      b#CNF# -> Terminal(b)
+      c#CNF# -> Terminal(c)
+      C#CNF#3 -> S c#CNF#
+      C#CNF#2 -> b#CNF# C#CNF#3
+      S -> a#CNF# C#CNF#1
+
+  - cfg: |
+      S ->  S S
+      S -> ( S ) | [ S ]
+      S -> ( ) | [ ]
+    expected: |
+      C#CNF#2 -> S ]#CNF#
+      S -> (#CNF# C#CNF#1
+      S -> (#CNF# )#CNF#
+      S -> [#CNF# C#CNF#2
+      )#CNF# -> Terminal())
+      C#CNF#1 -> S )#CNF#
+      [#CNF# -> Terminal([)
+      (#CNF# -> Terminal(()
+      S -> [#CNF# ]#CNF#
+      S -> S S
+      ]#CNF# -> Terminal(])
