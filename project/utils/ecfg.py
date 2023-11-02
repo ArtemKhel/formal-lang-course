@@ -1,24 +1,24 @@
 from pathlib import Path
-from typing import Self
+from typing import Self, AbstractSet
 
 from pyformlang.cfg import Variable, Terminal
 from pyformlang.regular_expression import Regex
 
-from project.utils.rsm import RSM
+from project.utils.rsm import RSM, RSMBox
 
 
 class ECFG:
     def __init__(
         self,
-        variables: AbstractSet[Variable] = None,
-        terminals: AbstractSet[Terminal] = None,
+        variables: AbstractSet[Variable] = frozenset(),
+        terminals: AbstractSet[Terminal] = frozenset(),
         productions: dict[Variable, Regex] = None,
-        start_symbol: Variable = None,
+        start_symbol: Variable | str = Variable('S'),
     ):
         self._variables = variables
         self._terminals = terminals
-        self._productions = productions
-        self._start_symbol = start_symbol
+        self._productions = productions if productions else dict()
+        self._start_symbol = start_symbol if isinstance(start_symbol, Variable) else Variable(start_symbol)
 
     @property
     def variables(self) -> AbstractSet[Variable]:
@@ -33,7 +33,9 @@ class ECFG:
         return self._start_symbol
 
     @classmethod
-    def from_text(cls, text: str, start_symbol=Variable('S')) -> Self:
+    def from_text(cls, text: str, start_symbol: Variable | str = Variable('S')) -> Self:
+        if isinstance(start_symbol, str):
+            start_symbol = Variable(start_symbol)
         variables = set()
         productions = dict()
         for line in text.splitlines():
@@ -48,13 +50,13 @@ class ECFG:
         return cls(variables=variables, start_symbol=start_symbol, productions=productions)
 
     @classmethod
-    def from_file(cls, file: Path, start_symbol=Variable('S')) -> Self:
+    def from_file(cls, file: Path, start_symbol: Variable | str = Variable('S')) -> Self:
         with open(file) as f:
             return cls.from_text(f.read(), start_symbol)
 
 
 def ecfg_to_rsm(ecfg: ECFG) -> RSM:
-    transitions = {}
+    transitions = []
     for var in ecfg.variables:
-        transitions[var] = ecfg.productions[var].to_epsilon_nfa()
+        transitions.append(RSMBox(var, ecfg.productions[var].to_epsilon_nfa()))
     return RSM(ecfg.start_symbol, transitions)
