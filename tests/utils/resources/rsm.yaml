@@ -1,0 +1,14 @@
+data:
+  - ecfg: |
+      S -> a
+
+  - ecfg: |
+      S -> A
+      A -> a
+
+  - ecfg: |
+      X -> a X b | a b
+    start: X
+
+  - ecfg: |
+      S -> a | b* S
