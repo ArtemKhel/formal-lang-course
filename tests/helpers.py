@@ -19,7 +19,7 @@ def load_test_data(path: Path, convert: Callable = (lambda x: x), flat: bool = F
 
 
 def main():
-    load_test_data(TEST_DIR / 'utils/resources/test.yaml')
+    load_test_data(TEST_DIR / 'utils/resources/cfpq.yaml')
     pass
 
 
