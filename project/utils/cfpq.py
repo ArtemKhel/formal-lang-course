@@ -28,17 +28,17 @@ def hellings(graph: nx.Graph, cfg: CFG) -> set[tuple[Any, Variable, Any]]:
     while len(queue) > 0:
         start1, v_i, end1 = queue.pop()
 
-        _res = set()
+        new_res = set()
         for start2, v_j, end2 in filter(lambda x: x[2] == start1, res):
             for v_k in filter(lambda v_k: (v_j, v_i) in to_vars[v_k] and (start2, v_k, end1) not in res, to_vars):
                 queue.add((start2, v_k, end1))
-                _res.add((start2, v_k, end1))
+                new_res.add((start2, v_k, end1))
         for start2, v_j, end2 in filter(lambda x: x[0] == end1, res):
             for v_k in filter(lambda v_k: (v_i, v_j) in to_vars[v_k] and (start1, v_k, end2) not in res, to_vars):
                 queue.add((start1, v_k, end2))
-                _res.add((start1, v_k, end2))
+                new_res.add((start1, v_k, end2))
 
-        res |= _res
+        res |= new_res
     return res
 
 
