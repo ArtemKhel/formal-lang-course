@@ -58,9 +58,17 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - run: poetry run antlr4 Language.g4 -Dlanguage=Python3 -o antlr/
+        working-directory: project/parser
       #----------------------------------------------
       #    add matrix specifics and run test suite
       #----------------------------------------------
       - name: Run tests
         run: |
-          poetry run pytest -s
+          poetry run python -m pytest -s
