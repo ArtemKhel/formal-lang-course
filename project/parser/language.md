@@ -108,19 +108,24 @@ bool -> 'true' | 'false'
 ```
 g = load("graph_name");
 g = set_start(g, {0, 1, 2});
-g = set_finals(g, get_vertices(g));
+g = set_final(g, get_vertices(g));
 
-q = ("a" | "b") . "c" *
+q = ("a" | "b") . "c" *;
 
-res = g & q
+res = g & q;
 
 res = filter(
-    lambda label -> label in {"one", "two", "three"},
+{label -> label in {"one", "two", "three"}},
     map(
-        lambda [_, label, _] -> label,
+        {[_, label, _] -> label},
         get_edges(res)
     )
 );
 
-print(res)
+print(res);
+```
+
+Генерация парсера:
+```shell
+antlr4 Language.g4 -Dlanguage=Python3 -o antlr/
 ```
