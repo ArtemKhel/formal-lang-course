@@ -64,7 +64,7 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      - run: antlr4 Language.g4 -Dlanguage=Python3 -o antlr/
+      - run: poetry run antlr4 Language.g4 -Dlanguage=Python3 -o antlr/
         working-directory: project/parser
       #----------------------------------------------
       #    add matrix specifics and run test suite
