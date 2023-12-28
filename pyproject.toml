@@ -12,6 +12,7 @@ antlr4-python3-runtime = "^4.13.1"
 cfpq-data = "^4.0.2"
 pydot = "^1.4.2"
 scipy = "^1.11.2"
+antlr4-tools = "^0.2.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.0"
