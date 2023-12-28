@@ -1,0 +1,76 @@
+data:
+  - code: ""
+  - code: |
+      # comment
+
+  - code: |
+      int = 42;
+
+  - code: |
+      str = "string";
+
+  - code: |
+      bool = true;
+
+  - code: |
+      print("hello world");
+
+  - code: |
+      x = 42;
+      print(x);
+
+  - code: |
+      w = x and (not y) or z;
+
+  - code: |
+      print(print("hello world"));
+    should_fail: true
+
+  - code: |
+      id = { x -> x };
+
+  - code: |
+      x = { _ -> 42 };
+
+  - code: |
+      label = { [_, l, _] -> l };
+
+  - code: |
+      x = map({x -> x}, expr);
+
+  - code: |
+      x = g & gg;
+
+  - code: |
+      x = 1 in {1, 2, 3};
+
+  - code: |
+      x = set_start({1, 2, 3}, graph);
+
+  - code: |
+      x = get_start(expr);
+
+  - code: |
+      x = load("some_graph");
+
+  - code: |
+      x = (parenthesized_expr);
+
+  - code: |
+      g = load("graph_name");
+      g = set_start(g, {0, 1, 2});
+      g = set_final(g, get_vertices(g));
+
+      q = ("a" | "b") . "c" *;
+
+      res = g & q;
+
+      res = filter(
+        {label -> label in {"one", "two", "three"}},
+        map(
+          {[_, label, _] -> label},
+          get_edges(res)
+        )
+      );
+
+      print(res);
