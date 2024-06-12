@@ -20,4 +20,4 @@ def test_get_graph_stats():
     name = "bzip"
     graph = load_graph_by_name(name)
     stats = get_graph_stats(graph)
-    assert stats == GraphStats(556, 632, {'a', 'd'})
+    assert stats == GraphStats(556, 632, {'a', 'd'}, ['d', 'a'])

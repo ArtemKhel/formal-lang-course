@@ -88,8 +88,6 @@ class TestRPQWithConstraint:
     )
     def test_main(self, graph, regex, start_states, final_states, per_state, expected):
         assert (
-            rpq_with_constraint(
-                graph=graph, regex=regex, start_states=start_states, final_states=final_states, per_state=per_state
-            )
+            rpq_bfs(graph=graph, regex=regex, start_states=start_states, final_states=final_states, per_state=per_state)
             == expected
         )

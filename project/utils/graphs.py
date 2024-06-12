@@ -10,6 +10,7 @@ class GraphStats(NamedTuple):
     edges: int
     nodes: int
     edge_labels: set[str]
+    sorted_edge_labels: list[str]
 
 
 def load_graph_by_name(name: str) -> nx.MultiDiGraph:
@@ -35,6 +36,7 @@ def get_graph_stats(graph: nx.MultiDiGraph) -> GraphStats:
         nodes=graph.number_of_nodes(),
         edges=graph.number_of_edges(),
         edge_labels=set(l for _, _, l in graph.edges.data("label")),
+        sorted_edge_labels=cfpq_data.get_sorted_labels(graph),
     )
 
 

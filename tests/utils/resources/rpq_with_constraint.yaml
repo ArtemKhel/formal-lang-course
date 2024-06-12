@@ -45,7 +45,6 @@ data:
         per_state: true
         expected: [ [ '0', '3' ] ]
 
-  # Чёт фигня какая-то с этим тестом. Локально каждый раз проходит, а GHA рандомно фейлят.
   - graph: 'digraph {0;1;2;3; 0 -> 1 [label=a]; 1 -> 2 [label=b]; 2 -> 0 [label=a]; 0 -> 3 [label=b]; 3 -> 0 [label=b]}'
     requests:
       - regex: 'b* a b'
